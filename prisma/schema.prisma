@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  DONOR
+  VOLUNTEER
+  NEEDY
+}
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  userEmail           String    @unique
+  name                String
+  password            String
+  typeOfUser         UserType
+  howManyDilsDone     Int?      // Optional: number of "dils" done
+  eventsParticipated   Int?      // Optional: number of events participated
+  donatedFood         Int?      // Optional: amount of food donated (you can change type based on your needs)
+  donatedAmount       Float?    // Optional: total amount donated
+}
+
+model FoodDonate {
+  id               Int       @id @default(autoincrement())
+  organizationName String    // Name of the organization receiving the food donation
+  foodItems        FoodItem[] // List of food items (linked to another table for more detailed data)
+  pickup           Boolean   // Pickup status: true (needs pickup) or false (doesn't need pickup)
+  createdAt        DateTime  @default(now()) // Automatically set the creation date
+}
+
+model FoodItem {
+  id          Int       @id @default(autoincrement())
+  itemName    String    // Name of the food item (e.g., Rice, Wheat)
+  quantityKg  Float     // Quantity in kilograms
+  expiryDate  DateTime  // Expiry date of the food item
+  foodDonate  FoodDonate @relation(fields: [foodDonateId], references: [id])
+  foodDonateId Int
+}
+
