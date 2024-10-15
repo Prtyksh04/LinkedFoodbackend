@@ -36,36 +36,37 @@ const donateMoney = async (req, res) => {
 
 
 const createFoodDonation = async (req, res) => {
+    const { organizationName, pickup, longitude, latitude, foodItems } = req.body;
+
     try {
-        const { organizationName, foodItems, pickup } = req.body;
-
-        // Check if the foodItems array exists and has at least one item
-        if (!foodItems || foodItems.length === 0) {
-            return res.status(400).json({ message: 'Food items are required' });
-        }
-
-        // Create a new food donation entry
-        const foodDonation = await prisma.foodDonate.create({
-            data: {
-                organizationName,
-                pickup,
-                foodItems: {
-                    create: foodItems.map(item => ({
-                        itemName: item.itemName,
-                        quantityKg: item.quantityKg,
-                        expiryDate: new Date(item.expiryDate)
-                    })),
-                },
-            },
-            include: { foodItems: true } 
-        });
-
-        res.status(201).json({ message: 'Food donation created successfully', foodDonation });
+      // Create food donation with associated food items
+      const foodDonation = await prisma.foodDonate.create({
+        data: {
+          organizationName,
+          pickup,
+          longitude,
+          latitude,
+          foodItems: {
+            create: foodItems.map(item => ({
+              itemName: item.itemName,
+              quantityKg: item.quantityKg,
+              expiryDate: new Date(item.expiryDate), // Ensure this is a Date object
+              ageGroup: item.ageGroup, // Assuming ageGroup is passed as a string matching the enum
+            })),
+          },
+        },
+      });
+  
+      res.status(201).json({
+        message: 'Food donation created successfully',
+        foodDonation,
+      });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Something went wrong', error });
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while creating the food donation.' });
     }
 };
+
 
 
 

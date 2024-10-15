@@ -30,13 +30,14 @@ model User {
   donatedFood         Int?      // Optional: amount of food donated (you can change type based on your needs)
   donatedAmount       Float?    // Optional: total amount donated
 }
-
 model FoodDonate {
-  id               Int       @id @default(autoincrement())
-  organizationName String    // Name of the organization receiving the food donation
-  foodItems        FoodItem[] // List of food items (linked to another table for more detailed data)
-  pickup           Boolean   // Pickup status: true (needs pickup) or false (doesn't need pickup)
-  createdAt        DateTime  @default(now()) // Automatically set the creation date
+  id          Int       @id @default(autoincrement())
+  organizationName String // Name of the organization
+  pickup      Boolean    // Pickup instructions or location
+  longitude   Float     // Longitude of the donor's location
+  latitude    Float     // Latitude of the donor's location
+  foodItems   FoodItem[] @relation // Relation to food items
+  createdAt   DateTime  @default(now()) // Timestamp of the donation
 }
 
 model FoodItem {
@@ -44,7 +45,16 @@ model FoodItem {
   itemName    String    // Name of the food item (e.g., Rice, Wheat)
   quantityKg  Float     // Quantity in kilograms
   expiryDate  DateTime  // Expiry date of the food item
+  ageGroup    AgeGroup  // Age group enum
   foodDonate  FoodDonate @relation(fields: [foodDonateId], references: [id])
   foodDonateId Int
 }
 
+enum AgeGroup {
+  UNDER_SIX_MONTHS
+  SIX_TO_TWELVE_MONTHS
+  ONE_TO_THREE_YEARS
+  FOUR_TO_SIX_YEARS
+  SEVEN_TO_TWELVE_YEARS
+  THIRTEEN_PLUS
+}
