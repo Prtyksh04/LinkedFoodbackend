@@ -5,5 +5,16 @@ const DonateController = require("../controller/Donation");
 // Other routes...
 router.post("/donatemoney", DonateController.donateMoney);
 router.post('/donatefood',DonateController.createFoodDonation);
+router.get("/getfoodDonation" , DonateController.getFoodDonation);
+router.post('/foodRequest',DonateController.foodRequest);
+router.get('/getfoodRequestByNeededUser/:userId',DonateController.GetFoodRequestByNeededUser);
+// router.patch("/foodRequestUpdate/:requestId",DonateController.FoodRequestUpdate);
+router.put('/acceptFoodRequest/:requestId',DonateController.acceptFoodRequest)
+router.put("/rejectFoodRequest",DonateController.rejectFoodRequest);
+router.put("/completeFoodRequest/:requestId" ,DonateController.completeFoodRequest);
+router.put('/getFoodRequestForVolunteer',DonateController.GetFoodRequestByNeededUser);
+router.patch('/volunteerTakesFoodRequest/:requestId',DonateController.volunteerTakesFoodRequest);
+
+
 
 module.exports = router;

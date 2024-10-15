@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -20,34 +14,43 @@ enum UserType {
 }
 
 model User {
-  id                  Int       @id @default(autoincrement())
-  userEmail           String    @unique
+  id                  Int            @id  @default(autoincrement())
+  userEmail           String         @unique
   name                String
   password            String
   typeOfUser         UserType
-  howManyDilsDone     Int?      // Optional: number of "dils" done
-  eventsParticipated   Int?      // Optional: number of events participated
-  donatedFood         Int?      // Optional: amount of food donated (you can change type based on your needs)
-  donatedAmount       Float?    // Optional: total amount donated
+  howManyDilsDone     Int?           // Optional: number of "dils" done
+  eventsParticipated   Int?           // Optional: number of events participated
+  donatedFood         Int?           // Optional: amount of food donated
+  donatedAmount       Float?         // Optional: total amount donated
+
+  // Add the relation fields
+  foodRequests        FoodRequest[]  @relation("UserRequests") // Relation to food requests
+  foodDonations       FoodDonate[]   @relation("UserFoodDonations") // Relation to food donations
+  handledRequests     FoodRequest[]  @relation("VolunteerRequests") // Requests handled by the volunteer
 }
+
 model FoodDonate {
-  id          Int       @id @default(autoincrement())
-  organizationName String // Name of the organization
-  pickup      Boolean    // Pickup instructions or location
-  longitude   Float     // Longitude of the donor's location
-  latitude    Float     // Latitude of the donor's location
-  foodItems   FoodItem[] @relation // Relation to food items
-  createdAt   DateTime  @default(now()) // Timestamp of the donation
+  id                  Int            @id @default(autoincrement())
+  organizationName    String         // Name of the organization
+  pickup              Boolean        // Pickup instructions or location
+  longitude           Float          // Longitude of the donor's location
+  latitude            Float          // Latitude of the donor's location
+  foodItems           FoodItem[]     @relation // Relation to food items
+  createdAt           DateTime       @default(now()) // Timestamp of the donation
+  userId              Int            // Reference to the User who is donating the food
+  foodRequests        FoodRequest[]  @relation("FoodDonationRequests") // Relation to food requests
+  donor               User            @relation("UserFoodDonations", fields: [userId], references: [id]) // Relation to the User model
 }
 
 model FoodItem {
-  id          Int       @id @default(autoincrement())
-  itemName    String    // Name of the food item (e.g., Rice, Wheat)
-  quantityKg  Float     // Quantity in kilograms
-  expiryDate  DateTime  // Expiry date of the food item
-  ageGroup    AgeGroup  // Age group enum
-  foodDonate  FoodDonate @relation(fields: [foodDonateId], references: [id])
-  foodDonateId Int
+  id                  Int            @id @default(autoincrement())
+  itemName            String         // Name of the food item (e.g., Rice, Wheat)
+  quantityKg          Float          // Quantity in kilograms
+  expiryDate          DateTime       // Expiry date of the food item
+  ageGroup            AgeGroup       // Age group enum
+  foodDonate          FoodDonate     @relation(fields: [foodDonateId], references: [id])
+  foodDonateId        Int
 }
 
 enum AgeGroup {
@@ -57,4 +60,24 @@ enum AgeGroup {
   FOUR_TO_SIX_YEARS
   SEVEN_TO_TWELVE_YEARS
   THIRTEEN_PLUS
+}
+
+model FoodRequest {
+  id                  Int            @id @default(autoincrement())
+  foodDonateId       Int            // Reference to the FoodDonate table
+  needyUserId        Int            // Reference to the needy user requesting food
+  volunteerId        Int?           // Reference to the volunteer who completed the request (optional)
+  status              RequestStatus   // Status of the request (PENDING, ACCEPTED, DECLINED)
+  createdAt           DateTime       @default(now()) // Timestamp of the request
+  updatedAt           DateTime       @updatedAt // Timestamp of the last update
+
+  foodDonate          FoodDonate     @relation("FoodDonationRequests", fields: [foodDonateId], references: [id])
+  needyUser          User            @relation("UserRequests", fields: [needyUserId], references: [id])
+  volunteer          User?           @relation("VolunteerRequests", fields: [volunteerId], references: [id]) // Relation to the volunteer
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
 }
