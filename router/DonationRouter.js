@@ -5,10 +5,11 @@ const DonateController = require("../controller/Donation");
 // Other routes...
 router.post("/donatemoney", DonateController.donateMoney);    //done 
 router.post('/donatefood',DonateController.createFoodDonation);   //done
-router.get("/getfoodDonation" , DonateController.getFoodDonation);
-router.post('/foodRequest',DonateController.foodRequest);
+router.get("/getfoodDonation" , DonateController.getFoodDonation);  //done
+router.post('/foodRequest',DonateController.foodRequest);      //done
 router.get('/getfoodRequestByNeededUser/:userId',DonateController.GetFoodRequestByNeededUser);
 // router.patch("/foodRequestUpdate/:requestId",DonateController.FoodRequestUpdate);
+router.get('/getDonorRequest',DonateController.getDonorRequest);
 router.put('/acceptFoodRequest/:requestId',DonateController.acceptFoodRequest)
 router.put("/rejectFoodRequest",DonateController.rejectFoodRequest);
 router.put("/completeFoodRequest/:requestId" ,DonateController.completeFoodRequest);

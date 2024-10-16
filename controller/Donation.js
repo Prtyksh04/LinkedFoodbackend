@@ -52,17 +52,17 @@ const createFoodDonation = async (req, res) => {
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decodedToken.userId;
         const userEmail = decodedToken.userEmail;
-        console.log("userId" , userId);
-        console.log("long : " , location.longitude)
-        console.log("latitude" , location.latitude);
+        console.log("userId", userId);
+        console.log("long : ", location.longitude)
+        console.log("latitude", location.latitude);
         const foodDonation = await prisma.foodDonate.create({
             data: {
                 organizationName,
                 pickup,
-                longitude : location.longitude,
-                latitude : location.latitude,
+                longitude: location.longitude,
+                latitude: location.latitude,
                 donor: {
-                    connect: { id: userId }, 
+                    connect: { id: userId },
                 },
                 foodItems: {
                     create: foodItems.map(item => ({
@@ -97,27 +97,89 @@ const getFoodDonation = async (req, res) => {
 }
 
 const foodRequest = async (req, res) => {
-    const { foodDonateId, needyUserId } = req.body;
+    const { foodDonateId } = req.body;
+    const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
+
+    if (!token) {
+        console.log('Token not found');
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     try {
+
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decodedToken.userId;
+
         const foodRequest = await prisma.foodRequest.create({
             data: {
                 foodDonateId,
-                needyUserId,
-                status: 'PENDING', // Initial status
+                needyUserId: userId,
+                status: 'PENDING',
             },
         });
-        res.status(201).json(foodRequest); // Return created request
+        console.log("Foodrequest", foodRequest);
+        res.status(201).json(foodRequest);
     } catch (error) {
         console.error("Error creating food request:", error);
         res.status(500).json({ message: 'An error occurred while creating the food request.' });
     }
 }
 
-const acceptFoodRequest = async (req, res) => {
-    const { requestId } = req.params;
+const getDonorRequest = async (req, res) => {
+    const token = req.cookies['auth-token']; 
+    // const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJFbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI5MDQ5MzQ2LCJleHAiOjE3MjkwNTI5NDZ9.1bPAuzfWmm3goST2FViriI97-Ef9-ARrCmyyfbIjbAg"
+
+    if (!token) {
+        console.log('Token not found');
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     try {
+        // Verify and decode the JWT token to get the userId (donorId)
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decodedToken.userId;
+
+        // Fetch food donation requests related to this donor
+        const foodRequests = await prisma.foodRequest.findMany({
+            where: {
+                foodDonate: {
+                    userId: userId, // Ensure the logged-in user is the donor
+                },
+            },
+            include: {
+                foodDonate: {
+                    include: {
+                        foodItems: true, // Include details of the donated food items
+                    },
+                },
+                needyUser: true, // Include details about the needy user requesting food
+                volunteer: true, // Include details about the volunteer (if assigned)
+            },
+        });
+
+        // Return the food requests associated with this donor
+        res.status(200).json(foodRequests);
+    } catch (error) {
+        console.error("Error getting food requests:", error);
+        res.status(500).json({ message: 'An error occurred while getting the food requests.' });
+    }
+};
+
+
+const acceptFoodRequest = async (req, res) => {
+    const { requestId } = req.params;
+    const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
+
+    if (!token) {
+        console.log('Token not found');
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    try {
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decodedToken.userId;
+
+
         const updatedRequest = await prisma.foodRequest.update({
             where: {
                 id: Number(requestId),
@@ -268,7 +330,7 @@ const completeFoodRequest = async (req, res) => {
 
         console.log("user Id : ", user);
 
-        
+
 
         res.status(200).json({
             message: 'Food request completed successfully',
@@ -287,8 +349,8 @@ const completeFoodRequest = async (req, res) => {
 
 
 // Endpoint to get all food requests by a needy user
-const GetFoodRequestByNeededUser = async(req,res)=>{
-    const {userId} = req.params;
+const GetFoodRequestByNeededUser = async (req, res) => {
+    const { userId } = req.params;
     const foodRequests = await prisma.foodRequest.findMany({
         where: {
             needyUserId: Number(userId),
@@ -333,5 +395,6 @@ module.exports = {
     rejectFoodRequest,   //put
     getFoodRequestsForVolunteer,
     completeFoodRequest,
-    volunteerTakesFoodRequest
+    volunteerTakesFoodRequest,
+    getDonorRequest
 };
