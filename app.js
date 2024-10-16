@@ -16,9 +16,10 @@ app.use(cookieParser());
 
 //middlewares
 app.use(express.json())
+
 const corsOptions = {
-    origin: 'http://localhost:5173', // Your frontend URL
-    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+    origin: 'http://localhost:5173',
+    credentials: true,
 };
 
 app.use(cors(corsOptions));

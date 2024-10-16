@@ -98,7 +98,8 @@ const getFoodDonation = async (req, res) => {
 
 const foodRequest = async (req, res) => {
     const { foodDonateId } = req.body;
-    const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
+    const token = req.cookies['auth-token'];
+    console.log("Token : ", token);
 
     if (!token) {
         console.log('Token not found');
@@ -126,7 +127,7 @@ const foodRequest = async (req, res) => {
 }
 
 const getDonorRequest = async (req, res) => {
-    const token = req.cookies['auth-token']; 
+    const token = req.cookies['auth-token'];
     // const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJFbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI5MDQ5MzQ2LCJleHAiOjE3MjkwNTI5NDZ9.1bPAuzfWmm3goST2FViriI97-Ef9-ARrCmyyfbIjbAg"
 
     if (!token) {
@@ -168,6 +169,7 @@ const getDonorRequest = async (req, res) => {
 
 const acceptFoodRequest = async (req, res) => {
     const { requestId } = req.params;
+    console.log("requestId", requestId);
     const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
 
     if (!token) {
@@ -185,7 +187,7 @@ const acceptFoodRequest = async (req, res) => {
                 id: Number(requestId),
             },
             data: {
-                status: 'ACCEPTED', // Change status to ACCEPTED
+                status: 'ACCEPTED',
             },
         });
         res.status(200).json(updatedRequest);
@@ -199,14 +201,11 @@ const acceptFoodRequest = async (req, res) => {
 // Endpoint for the donor to reject a food request
 const rejectFoodRequest = async (req, res) => {
     const { requestId } = req.params;
-
+    console.log("requestId: " , requestId);
     try {
-        const updatedRequest = await prisma.foodRequest.update({
+        const updatedRequest = await prisma.foodRequest.delete({
             where: {
                 id: Number(requestId),
-            },
-            data: {
-                status: 'REJECTED', // Change status to REJECTED
             },
         });
         res.status(200).json(updatedRequest);
@@ -218,6 +217,7 @@ const rejectFoodRequest = async (req, res) => {
 
 // Endpoint for volunteers to get accepted food requests
 const getFoodRequestsForVolunteer = async (req, res) => {
+
     try {
         const foodRequests = await prisma.foodRequest.findMany({
             where: {
@@ -235,11 +235,25 @@ const getFoodRequestsForVolunteer = async (req, res) => {
 }
 
 const volunteerTakesFoodRequest = async (req, res) => {
-    const { requestId } = req.params; // Request ID from the route parameters
-    const { volunteerId } = req.body; // Volunteer ID from the request body
+    const { requestId } = req.params; 
+
+    const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
+
+    if (!token) {
+        console.log('Token not found');
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     try {
         // Find the food request and ensure it's currently accepted
+
+         // Verify and decode the JWT token to get the userId (donorId)
+         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+         const userId = decodedToken.userId;
+         const volunteerId = userId;
+
+         console.log("userId : " , userId);
+
         const foodRequest = await prisma.foodRequest.findUnique({
             where: { id: Number(requestId) },
         });
@@ -271,72 +285,31 @@ const volunteerTakesFoodRequest = async (req, res) => {
     }
 };
 
+// 
 
 // Endpoint for the volunteer to complete the food request
 const completeFoodRequest = async (req, res) => {
     const { requestId } = req.params;
-    const { volunteerId } = req.body;
+    console.log('requestId: ' , requestId) ;
+    const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
+
+    if (!token) {
+        console.log('Token not found');
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     try {
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decodedToken.userId;
+        const volunteerId = userId;
         // Find the food request and ensure it's currently in progress
-        const foodRequest = await prisma.foodRequest.findUnique({
+        const foodRequest = await prisma.foodRequest.delete({
             where: { id: Number(requestId) },
-            include: {
-                foodDonate: {
-                    include: {
-                        foodItems: true,
-                    },
-                },
-            },
         });
 
-        if (!foodRequest) {
-            return res.status(404).json({ message: 'Food request not found' });
-        }
-
-        if (foodRequest.status !== 'PENDING') {
-            return res.status(400).json({ message: 'Food request is not in progress' });
-        }
-
-        const totalQuantityDelivered = foodRequest.foodDonate.foodItems.reduce(
-            (total, item) => total + item.quantityKg,
-            0
-        );
-
-        // Update the food request status to 'ACCEPTED' and assign the volunteer
-        const updatedRequest = await prisma.foodRequest.update({
-            where: { id: Number(requestId) },
-            data: {
-                status: 'ACCEPTED',
-                volunteerId: volunteerId,
-            },
-        });
-
-        // Update the volunteer's number of deliveries completed
-        await prisma.user.update({
-            where: { id: volunteerId },
-            data: {
-                howManyDilsDone: {
-                    increment: 1,
-                },
-            },
-        });
-
-        // Find the userId of the donor (from the updated food donation request)
-        const user = await prisma.foodDonate.findUnique({
-            where: { id: updatedRequest.foodDonateId }, // Use the id field correctly here
-            select: { userId: true }, // Select the userId of the donor
-        });
-
-        console.log("user Id : ", user);
-
-
-
+       
         res.status(200).json({
             message: 'Food request completed successfully',
-            updatedRequest,
-            totalQuantityDelivered,
-            userId: user?.userId, // Return the userId (if found)
         });
     } catch (error) {
         console.error('Error completing food request:', error);
@@ -344,40 +317,25 @@ const completeFoodRequest = async (req, res) => {
     }
 };
 
-
-
-
-
-// Endpoint to get all food requests by a needy user
-const GetFoodRequestByNeededUser = async (req, res) => {
-    const { userId } = req.params;
-    const foodRequests = await prisma.foodRequest.findMany({
+const getDeliveriesOnTheWay = async (req, res) => {
+    console.log("getDeliveriesOnTheWay");
+    try {
+      const pendingDeliveries = await prisma.foodRequest.findMany({
         where: {
-            needyUserId: Number(userId),
+          status: "PENDING",
         },
-        include: {
-            foodDonate: true,
-        },
-    });
-    res.json(foodRequests);
-}
+      });
+  
+      console.log("pendingRequest",pendingDeliveries);
+      
+      res.status(200).json(pendingDeliveries);
+    } catch (error) {
+      console.error("Error fetching pending deliveries:", error);
+      res.status(500).json({ error: "Failed to fetch pending deliveries" });
+    }
+  };
 
 
-//endpoint to update the food request
-// const FoodRequestUpdate = async(req,res) =>{
-//     const { requestId } = req.params;
-//     const { status } = req.body;
-
-//     const updatedRequest = await prisma.foodRequest.update({
-//         where: {
-//             id: Number(requestId),
-//         },
-//         data: {
-//             status,
-//         },
-//     });
-//     res.json(updatedRequest);
-// }
 
 
 
@@ -389,11 +347,11 @@ module.exports = {
     createFoodDonation,
     getFoodDonation,
     foodRequest,   //post
-    GetFoodRequestByNeededUser,
     // FoodRequestUpdate,
     acceptFoodRequest,   //put
     rejectFoodRequest,   //put
     getFoodRequestsForVolunteer,
+    getDeliveriesOnTheWay,
     completeFoodRequest,
     volunteerTakesFoodRequest,
     getDonorRequest
