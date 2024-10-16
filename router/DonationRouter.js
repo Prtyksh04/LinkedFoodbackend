@@ -3,8 +3,8 @@ const express = require("express");
 const router = express.Router();
 const DonateController = require("../controller/Donation");
 // Other routes...
-router.post("/donatemoney", DonateController.donateMoney);
-router.post('/donatefood',DonateController.createFoodDonation);
+router.post("/donatemoney", DonateController.donateMoney);    //done 
+router.post('/donatefood',DonateController.createFoodDonation);   //done
 router.get("/getfoodDonation" , DonateController.getFoodDonation);
 router.post('/foodRequest',DonateController.foodRequest);
 router.get('/getfoodRequestByNeededUser/:userId',DonateController.GetFoodRequestByNeededUser);

@@ -19,15 +19,15 @@ model User {
   name                String
   password            String
   typeOfUser         UserType
-  howManyDilsDone     Int?           // Optional: number of "dils" done
+  howManyDilsDone     Int?             // Optional: number of "dils" done
   eventsParticipated   Int?           // Optional: number of events participated
   donatedFood         Int?           // Optional: amount of food donated
-  donatedAmount       Float?         // Optional: total amount donated
+  donatedAmount       Float?        // Optional: total amount donated
 
   // Add the relation fields
-  foodRequests        FoodRequest[]  @relation("UserRequests") // Relation to food requests
-  foodDonations       FoodDonate[]   @relation("UserFoodDonations") // Relation to food donations
-  handledRequests     FoodRequest[]  @relation("VolunteerRequests") // Requests handled by the volunteer
+  foodRequests        FoodRequest[]  @relation("UserRequests")         // Relation to food requests
+  foodDonations       FoodDonate[]   @relation("UserFoodDonations")   // Relation to food donations
+  handledRequests     FoodRequest[]  @relation("VolunteerRequests")  // Requests handled by the volunteer
 }
 
 model FoodDonate {

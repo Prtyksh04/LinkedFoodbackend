@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const jwt = require('jsonwebtoken');
 
 const donateMoney = async (req, res) => {
     const { userEmail, name, donationAmount } = req.body;
@@ -36,18 +37,32 @@ const donateMoney = async (req, res) => {
 
 
 const createFoodDonation = async (req, res) => {
-    const { userId, organizationName, pickup, longitude, latitude, foodItems } = req.body;
+    const { organizationName, pickup, location, foodItems } = req.body;
+
+    // Access the token from the cookies
+    const token = req.cookies['auth-token']; // Assuming 'auth-token' is the cookie name
+
+    if (!token) {
+        console.log('Token not found');
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     try {
         // Create food donation with associated food items and link to the donor
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decodedToken.userId;
+        const userEmail = decodedToken.userEmail;
+        console.log("userId" , userId);
+        console.log("long : " , location.longitude)
+        console.log("latitude" , location.latitude);
         const foodDonation = await prisma.foodDonate.create({
             data: {
                 organizationName,
                 pickup,
-                longitude,
-                latitude,
+                longitude : location.longitude,
+                latitude : location.latitude,
                 donor: {
-                    connect: { id: userId }, // Link to the user who is donating
+                    connect: { id: userId }, 
                 },
                 foodItems: {
                     create: foodItems.map(item => ({

@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
 
 //router imports
 const DonationRouter = require("./router/DonationRouter");
@@ -11,10 +12,16 @@ const PORT = process.env.PORT || 3000;
 
 //create the app
 const app = express();
+app.use(cookieParser());
 
 //middlewares
 app.use(express.json())
-app.use(cors());
+const corsOptions = {
+    origin: 'http://localhost:5173', // Your frontend URL
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 
